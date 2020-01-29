@@ -43,6 +43,23 @@ container-run-server :		## Run container of the server
 container-run-client :		## Run container of the client
 	docker run -ti --rm --name greeting-service grpc/greeting-service
 
+## kubernetes
+
+start-minikube :		## Start Minikube
+	minikube start --cpus 4 --memory 8192 --disk-size=10g
+
+start-kind :		## Start KinD
+	kind create cluster --wait=60s
+
+deploy-server :		## Deploy server on Kubernetes
+	kubectl apply -k kube/hello-service
+
+deploy-client :		## Deploy server on Kubernetes
+	kubectl apply -k kube/greeting-service
+
+client-logs :		## Show client logs
+	kubectl logs -l app=greeting-service -f
+
 ## helpers
 
 help :		## Help
