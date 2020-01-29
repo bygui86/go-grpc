@@ -17,7 +17,7 @@ spec:
       containers:
         - name: greeting-service
           image: grpc/greeting-service
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           envFrom:
             - configMapRef:
                 name: greeting

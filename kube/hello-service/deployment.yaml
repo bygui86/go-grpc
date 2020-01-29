@@ -17,10 +17,10 @@ spec:
       containers:
         - name: hello-service
           image: grpc/hello-service
-          imagePullPolicy: Always
-#          envFrom:
-#            - configMapRef:
-#                name: hello
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: hello
           ports:
             - name: grpc
               containerPort: 50051
