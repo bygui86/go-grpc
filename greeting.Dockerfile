@@ -50,9 +50,9 @@ COPY logger logger
 COPY utils utils
 
 # Compile application
-RUN GOOS=linux go build -o /bin/app ./greeting-service/main.go
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o /bin/app ./greeting-service/main.go
 
-### ---
+### --- ALPINE
 
 ### Final image
 FROM alpine
@@ -60,13 +60,28 @@ FROM alpine
 # Install additionals
 RUN apk add --no-cache bash
 
-WORKDIR /bin
-
 # Copy application executable
-COPY --from=gobuilder /bin/app .
+COPY --from=gobuilder /bin/app /bin/app
 
+# gRPC
+EXPOSE 50051
 # KubeProbes
-EXPOSE 9091
+#EXPOSE 9091
 
 # Run application
-ENTRYPOINT [ "/bin/app" ]
+ENTRYPOINT ["/bin/app"]
+
+### --- SCRATCH
+
+#### Final image
+#FROM scratch
+#
+## Copy application executable
+#COPY --from=gobuilder /bin/app /bin/app
+#
+### gRPC
+#EXPOSE 50051
+## KubeProbes
+#EXPOSE 9091
+#
+#ENTRYPOINT ["/bin/app"]

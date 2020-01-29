@@ -50,12 +50,9 @@ COPY logger logger
 COPY utils utils
 
 # Compile application
-RUN GOOS=linux go build -o /bin/app ./hello-service/main.go
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o /bin/app ./hello-service/main.go
 
-# Run application
-#ENTRYPOINT "/bin/app"
-
-### ---
+### --- ALPINE
 
 ### Final image
 FROM alpine
@@ -63,21 +60,28 @@ FROM alpine
 # Install additionals
 RUN apk add --no-cache bash
 
-#WORKDIR /bin
-
 # Copy application executable
-#COPY --from=gobuilder /bin/app .
 COPY --from=gobuilder /bin/app /bin/app
-#COPY --from=gobuilder /bin/app /etc/opt/app
 
 # gRPC
 EXPOSE 50051
 # KubeProbes
-EXPOSE 9091
-
-#RUN chmod +x /bin/app
-#RUN chmod +x /etc/opt/app
+#EXPOSE 9091
 
 # Run application
-ENTRYPOINT [ "/bin/app" ]
-#ENTRYPOINT [ "/etc/opt/app" ]
+ENTRYPOINT ["/bin/app"]
+
+### --- SCRATCH
+
+#### Final image
+#FROM scratch
+#
+## Copy application executable
+#COPY --from=gobuilder /bin/app /bin/app
+#
+### gRPC
+#EXPOSE 50051
+## KubeProbes
+#EXPOSE 9091
+#
+#ENTRYPOINT ["/bin/app"]
