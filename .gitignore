@@ -69,4 +69,5 @@ out/
 ########### Project specific
 vendor/*
 !vendor/.gitkeep
-go-grpc
+grpc-server
+grpc-client
