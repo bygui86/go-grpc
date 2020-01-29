@@ -8,6 +8,8 @@ import (
 	"time"
 
 	"github.com/bygui86/go-grpc/domain"
+	"github.com/bygui86/go-grpc/greeting-service/grpc_client"
+	"github.com/bygui86/go-grpc/kubernetes"
 	"github.com/bygui86/go-grpc/logger"
 	"github.com/bygui86/go-grpc/utils"
 
@@ -15,22 +17,30 @@ import (
 )
 
 const (
-	serverAddressEnvVar = "GOGERPC_GRPC_SERVER_ADDRESS"
-	greeetingNameEnvVar = "GOGERPC_GREETING_NAME"
+	serverAddressEnvVar  = "GOGRPC_SERVER_ADDRESS"
+	greeetingNameEnvVar  = "GOGRPC_GREETING_NAME"
+	kubeProbesNameEnvVar = "GOGRPC_KUBE_PROBES_START"
 
-	serverAddressEnvVarDefault = "0.0.0.0:50051"
-	greeetingNameEnvVarDefault = "ANONYMOUS"
+	serverAddressEnvVarDefault  = "0.0.0.0:50051"
+	greeetingNameEnvVarDefault  = "ANONYMOUS"
+	kubeProbesNameEnvVarDefault = false
 )
 
 func main() {
 	serverAddress := utils.GetString(serverAddressEnvVar, serverAddressEnvVarDefault)
 	name := utils.GetString(greeetingNameEnvVar, greeetingNameEnvVarDefault)
+	kubeProbes := utils.GetBool(kubeProbesNameEnvVar, kubeProbesNameEnvVarDefault)
 
-	connection := createGrpcConnection(serverAddress)
-	defer connection.Close()
-	logger.SugaredLogger.Infof("Connection ready to %s", serverAddress)
+	grpcConn := createGrpcConnection(serverAddress)
+	defer grpcConn.Close()
+	logger.SugaredLogger.Infof("gRPC Connection ready to %s", serverAddress)
 
-	go startGreetings(connection, name)
+	go startGreetings(grpcConn, name)
+
+	if kubeProbes {
+		kubeServer := startKubernetes(grpcConn)
+		defer kubeServer.Shutdown()
+	}
 
 	logger.SugaredLogger.Info("Greeting service started!")
 	startSysCallChannel()
@@ -41,8 +51,12 @@ func createGrpcConnection(host string) *grpc.ClientConn {
 	connection, err := grpc.Dial(host, grpc.WithInsecure())
 	if err != nil {
 		logger.SugaredLogger.Errorf("Connection to gRPC server failed: %v", err.Error())
-		os.Exit(2)
+		os.Exit(3)
 	}
+
+	logger.SugaredLogger.Info("State: ", connection.GetState())
+	logger.SugaredLogger.Info("Target: ", connection.Target())
+
 	return connection
 }
 
@@ -68,6 +82,26 @@ func greet(client domain.HelloServiceClient, timeout time.Duration, name string)
 		return
 	}
 	logger.SugaredLogger.Info(response.Greeting)
+}
+
+// startKubernetes -
+func startKubernetes(grpcConn *grpc.ClientConn) *kubernetes.KubeProbesServer {
+	kubeProbes := kubernetes.KubeProbes{
+		GrpcInterface: &grpc_client.GrpcGreetingService{
+			GrpcConnection: grpcConn,
+		},
+	}
+	server, err := kubernetes.NewKubeProbesServer(kubeProbes)
+	if err != nil {
+		logger.SugaredLogger.Errorf("Kubernetes probes server creation failed: %s", err.Error())
+		os.Exit(2)
+	}
+	logger.SugaredLogger.Debug("Kubernetes probes server successfully created")
+
+	server.Start()
+	logger.SugaredLogger.Debug("Kubernetes probes successfully started")
+
+	return server
 }
 
 // startSysCallChannel -

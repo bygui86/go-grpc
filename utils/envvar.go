@@ -19,6 +19,15 @@ func GetString(key, def string) string {
 	return value
 }
 
+// GetBool -
+func GetBool(key string, defaultValue bool) bool {
+	value, err := strconv.ParseBool(os.Getenv(key))
+	if err != nil {
+		return defaultValue
+	}
+	return value
+}
+
 // GetInt -
 func GetInt(key string, defaultValue int) int {
 	return int(GetInt64(key, int64(defaultValue)))
