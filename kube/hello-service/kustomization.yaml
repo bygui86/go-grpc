@@ -1,0 +1,8 @@
+resources:
+  - configmap.yaml
+  - deployment.yaml
+  - service.yaml
+
+commonLabels:
+  app: hello-service
+  group: grpc-test

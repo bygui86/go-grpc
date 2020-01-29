@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: greeting
+data:
+  GOGRPC_SERVER_ADDRESS: hello.default.svc.cluster.local:50051
+  GOGRPC_GREETING_NAME: Matt
+  GOGRPC_KUBE_PROBES_START: "true"

@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: greeting
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: greeting
+  template:
+    metadata:
+      labels:
+        app: greeting
+    spec:
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 10
+      containers:
+        - name: greeting-service
+          image: grpc/greeting-service
+          imagePullPolicy: Always
+          envFrom:
+            - configMapRef:
+                name: greeting
+          ports:
+            - name: probes
+              containerPort: 9091
+          resources:
+            requests:
+              cpu: 500m
+              memory: 128M
+            limits:
+              cpu: 500m
+              memory: 128M
+          livenessProbe:
+            httpGet:
+              path: /live
+              port: 9091
+            initialDelaySeconds: 15
+            periodSeconds: 5
+            timeoutSeconds: 3
+            successThreshold: 1
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 9091
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            successThreshold: 1
+            failureThreshold: 3

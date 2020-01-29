@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hello
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: hello
+  template:
+    metadata:
+      labels:
+        app: hello
+    spec:
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 10
+      containers:
+        - name: hello-service
+          image: grpc/hello-service
+          imagePullPolicy: Always
+#          envFrom:
+#            - configMapRef:
+#                name: hello
+          ports:
+            - name: grpc
+              containerPort: 50051
+            - name: probes
+              containerPort: 9091
+          resources:
+            requests:
+              cpu: 500m
+              memory: 128M
+            limits:
+              cpu: 500m
+              memory: 128M
+          livenessProbe:
+            httpGet:
+              path: /live
+              port: 9091
+            initialDelaySeconds: 15
+            periodSeconds: 5
+            timeoutSeconds: 3
+            successThreshold: 1
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 9091
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            successThreshold: 1
+            failureThreshold: 3
