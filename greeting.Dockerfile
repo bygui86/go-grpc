@@ -46,6 +46,7 @@ COPY --from=protobuilder /app/domain domain
 
 # Copy application code
 COPY greeting-service greeting-service
+COPY kubernetes kubernetes
 COPY logger logger
 COPY utils utils
 
