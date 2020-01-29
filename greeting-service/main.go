@@ -2,54 +2,78 @@ package main
 
 import (
 	"context"
-	"flag"
-	"log"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
-	"github.com/bygui86/grpc-samples/go/domain"
+	"github.com/bygui86/go-grpc/domain"
+	"github.com/bygui86/go-grpc/logger"
+	"github.com/bygui86/go-grpc/utils"
 
 	"google.golang.org/grpc"
 )
 
 const (
-	defaultGrpcServerAddress = "localhost:50051"
-	defaultName              = "ANONYMOUS"
-)
+	serverAddressEnvVar = "GOGERPC_GRPC_SERVER_ADDRESS"
+	greeetingNameEnvVar = "GOGERPC_GREETING_NAME"
 
-var (
-	grpcServerAddress string
-	name              string
+	serverAddressEnvVarDefault = "0.0.0.0:50051"
+	greeetingNameEnvVarDefault = "ANONYMOUS"
 )
-
-func init() {
-	flag.StringVar(&grpcServerAddress, "grpcServerAddress", defaultGrpcServerAddress, "Server host:port")
-	flag.StringVar(&name, "name", defaultName, "Name to greet")
-	flag.Parse()
-}
 
 func main() {
-	// Set up a connection to the server.
-	connection, connErr := grpc.Dial(grpcServerAddress, grpc.WithInsecure())
-	if connErr != nil {
-		log.Fatalf("Connaction to gRPC server failed: %v", connErr)
-		panic(connErr)
-	}
+	serverAddress := utils.GetString(serverAddressEnvVar, serverAddressEnvVarDefault)
+	name := utils.GetString(greeetingNameEnvVar, greeetingNameEnvVarDefault)
+
+	connection := createGrpcConnection(serverAddress)
 	defer connection.Close()
+	logger.SugaredLogger.Infof("Connection ready to %s", serverAddress)
+
+	go startGreetings(connection, name)
+
+	logger.SugaredLogger.Info("Greeting service started!")
+	startSysCallChannel()
+}
+
+// createGrpcConnection -
+func createGrpcConnection(host string) *grpc.ClientConn {
+	connection, err := grpc.Dial(host, grpc.WithInsecure())
+	if err != nil {
+		logger.SugaredLogger.Errorf("Connection to gRPC server failed: %v", err.Error())
+		os.Exit(2)
+	}
+	return connection
+}
+
+// startGreetings -
+func startGreetings(connection *grpc.ClientConn, name string) {
+	timeout := 2 * time.Second
 	client := domain.NewHelloServiceClient(connection)
+	logger.SugaredLogger.Infof("Starting greeting %s...", name)
+	for {
+		go greet(client, timeout, name)
+		time.Sleep(3 * time.Second)
+	}
+}
 
-	// Define timeout
-	timeout := 1 * time.Second
-
-	// Contact the server
+// greet -
+func greet(client domain.HelloServiceClient, timeout time.Duration, name string) {
 	// WARNING: the connection context is one-shot, it must be refreshed before every request
 	connectionCtx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
-	response, reqErr := client.SayHello(connectionCtx, &domain.HelloRequest{Name: name})
-	if reqErr != nil {
-		log.Fatalf("could not greet: %v", reqErr)
-		panic(reqErr)
+	response, err := client.SayHello(connectionCtx, &domain.HelloRequest{Name: name})
+	if err != nil {
+		logger.SugaredLogger.Errorf("Could not greet %s: %v", name, err.Error())
+		return
 	}
+	logger.SugaredLogger.Info(response.Greeting)
+}
 
-	// Print out the response
-	log.Printf("Greeting: %s", response.Greeting)
+// startSysCallChannel -
+func startSysCallChannel() {
+	syscallCh := make(chan os.Signal)
+	signal.Notify(syscallCh, syscall.SIGTERM, syscall.SIGINT, os.Interrupt)
+	<-syscallCh
+	logger.SugaredLogger.Info("Termination signal received!")
 }

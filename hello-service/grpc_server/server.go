@@ -2,16 +2,24 @@ package grpc_server
 
 import (
 	"context"
-	"log"
+	"fmt"
 
-	"github.com/bygui86/grpc-samples/go/domain"
+	"github.com/bygui86/go-grpc/domain"
+	"github.com/bygui86/go-grpc/logger"
 )
 
-// server is used to implement helloworld.GreeterServer
+// Server - Used to implement helloworld.GreeterServer
 type Server struct{}
 
-// SayHello implements service HelloService helloworld.GreeterServer
+// SayHello - Implement service HelloService helloworld.GreeterServer
 func (s *Server) SayHello(ctx context.Context, in *domain.HelloRequest) (*domain.HelloResponse, error) {
-	log.Printf("Received: %v", in.Name)
-	return &domain.HelloResponse{Greeting: "Hello " + in.Name}, nil
+	logger.SugaredLogger.Infof("Name to greet: %s", in.Name)
+	return &domain.HelloResponse{
+		Greeting: buildGreet(in.Name),
+	}, nil
+}
+
+// buildGreet -
+func buildGreet(name string) string {
+	return fmt.Sprintf("Hello %s!", name)
 }

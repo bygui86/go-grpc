@@ -4,28 +4,70 @@ gRPC example in Golang
 
 ## Services
 
-- [greeting service (gRPC client)](greeting-service)
 - [hello service (gRPC server)](hello-service)
+- [greeting service (gRPC client)](greeting-service)
 
 ---
 
-## Run
+## Codebase
+
+### Prerequisites
 
 1. Compile protobufs
 	```shell
-	protoc -I go/proto/ go/proto/ --go_out=plugins=grpc:go/domain
+	protoc --proto_path=./proto/ --go_out=plugins=grpc:domain ./proto/*
 	```
 
-2. Start server (hello-service)
+### Build
+
+1. Server (hello-service)
 	```shell
-	cd hello-service
-	GO111MODULE=on go run main.go
+	go build -o grpc-server ./hello-service
 	```
 
-3. In another shell, start client (greeting-service)
+2. Client (greeting-service)
 	```shell
-	cd greeting-service
-	GO111MODULE=on go run main.go
+	go build -o grpc-client ./greeting-service
+	```
+
+### Run
+
+1. Start server (hello-service)
+	```shell
+	GO111MODULE=on go run ./hello-service/main.go
+	```
+
+2. In another shell, start client (greeting-service)
+	```shell
+	GO111MODULE=on go run ./greeting-service/main.go
+	```
+
+---
+
+## Docker
+
+### Build
+
+1. Server (hello-service)
+	```shell
+	docker build -t grpc/hello-service -f hello.Dockerfile .
+	```
+
+2. Client (greeting-service)
+	```shell
+	docker build -t grpc/greeting-service -f greeting.Dockerfile .
+	```
+
+### Run
+
+1. Server (hello-service)
+	```shell
+	docker run -ti --rm --name hello-service -p 50051:50051 grpc/hello-service
+	```
+
+2. Client (greeting-service)
+	```shell
+	docker run -ti --rm --name greeting-service grpc/greeting-service
 	```
 
 ---
@@ -44,16 +86,14 @@ This repo can be used for a polyglot test together with [java-grpc](https://gith
 
 2. In another shell, start client (greeting-service)
 	```shell
-	cd go-grpc/greeting-service
-	GO111MODULE=on go run main.go
+	GO111MODULE=on go run ./greeting-service/main.go
 	```
 
 ### Java client --> Go server
 
 1. Start server (hello-service)
 	```shell
-	cd go-grpc/hello-service
-	GO111MODULE=on go run main.go
+	GO111MODULE=on go run ./hello-service/main.go
 	```
 
 2. In another shell, start client (greeting-service)
@@ -66,6 +106,9 @@ This repo can be used for a polyglot test together with [java-grpc](https://gith
 
 ## TODO list
 
+- [ ] dockerfiles
+- [ ] kubernetes probes
+- [ ] kubernetes manifests
 - [ ] testing
 
 ---
