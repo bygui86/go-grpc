@@ -67,7 +67,7 @@ COPY --from=gobuilder /bin/app /bin/app
 # gRPC
 EXPOSE 50051
 # KubeProbes
-#EXPOSE 9091
+EXPOSE 9091
 
 # Run application
 ENTRYPOINT ["/bin/app"]

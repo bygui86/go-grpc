@@ -158,15 +158,6 @@ This repo can be used for a polyglot test together with [java-grpc](https://gith
 
 ---
 
-## TODO list
-
-- [ ] dockerfiles
-- [ ] kubernetes probes
-- [ ] kubernetes manifests
-- [ ] testing
-
----
-
 ## Links
 
 - https://grpc.io/docs/quickstart/go.html
